@@ -1,0 +1,56 @@
+# .github/workflows/deploy.yml
+name: Deploy SAM (dev & prod)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      env:
+        description: "Environment to deploy"
+        required: true
+        default: "dev"
+        type: choice
+        options: [ "dev", "prod" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # for OIDC
+      contents: read
+    env:
+      AWS_REGION: eu-west-1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Select environment
+        id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TARGET_ENV=${{ github.event.inputs.env }}" >> $GITHUB_OUTPUT
+          else
+            echo "TARGET_ENV=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ steps.pick.outputs.TARGET_ENV == 'prod' && 'arn:aws:iam::<ACCOUNT_ID>:role/SamDeployProdRole' || 'arn:aws:iam::<ACCOUNT_ID>:role/SamDeployDevRole' }}
+
+      - name: SAM Build
+        run: sam build --use-container
+
+      - name: SAM Deploy
+        run: sam deploy --no-fail-on-empty-changeset --config-env ${{ steps.pick.outputs.TARGET_ENV }}

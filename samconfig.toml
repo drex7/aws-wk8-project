@@ -1,0 +1,48 @@
+# More information about the configuration file can be found here:
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
+version = 0.1
+
+[default.global.parameters]
+stack_name = "s3-lambda-sns"
+s3_prefix = "artifacts"
+capabilities = "CAPABILITY_NAMED_IAM"
+
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
+[dev.deploy.parameters]
+confirm_changeset = true
+region = "eu-west-1"
+resolve_s3 = true
+parameter_overrides = [
+  "EnvName=dev",
+  "BucketName=my-company-edademo-dev-uploads",
+  "NotificationEmail1=dev-notifications@example.com",
+]
+
+[prod.deploy.parameters]
+region = "eu-west-1"
+confirm_changeset = true
+resolve_s3 = true
+parameter_overrides = [
+  "EnvName=prod",
+  "BucketName=my-company-edademo-prod-uploads",
+  "NotificationEmail1=ops@example.com",
+]
+
+[default.package.parameters]
+resolve_s3 = true
+
+[default.sync.parameters]
+watch = true
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"

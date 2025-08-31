@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+# Transform: "AWS::LanguageExtensions"
+
+Description: >
+  Template to automatically send an email notification whenever a new object is uploaded to a designated S3 bucket. 
+  This notification should be triggered as a result of the upload event, without any manual intervention, 
+  and should be delivered to all expecting email address using Amazon SNS.
+  
+Parameters:
+  ProjectTag:
+    Type: String
+    Description: "Project tag to be used for resource naming"
+    Default: "wk8-lab1"
+  EmailAddresses:
+    Type: CommaDelimitedList
+    Description: "List of email accounts to subscribe to the SNS topic"
+    Default: ""
+  EnvName:
+    Type: String
+    Description: "Environment name (e.g., dev, prod)"
+    AllowedValues:
+      - dev
+      - prod
+    Default: "dev"
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 10
+    MemorySize: 256
+    Tracing: Active
+    Architectures:
+        - x86_64
+    Environment:
+      Variables:
+        S3_OBJECT_UPLOADED_TOPIC_ARN: !Ref ObjectUploadedTopic
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectTag}-bucket-${AWS::AccountId}-${EnvName}
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: ProjectTag
+          Value: !Ref ProjectTag
+        - Key: Environment
+          Value: !Ref EnvName
+    
+    BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref Bucket
+        PolicyDocument:
+          Statement:
+            - Effect: Allow
+              Principal: 
+                Service: s3.amazonaws.com
+              Action: "SNS:Publish"
+              Resource: !Ref StatusUpdatedTopic
+
+
+
+  ObjectUploadedTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "s3-upload-notifications-${EnvName}"
+      Subscription:
+        - Protocol: email
+          Endpoint: !Select [ 0, !Ref EmailAddresses ]
+        - Protocol: email
+          Endpoint: !Select [ 1, !Ref EmailAddresses ]
+
+  NotifyUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub s3-event-handler-${EnvName}
+      CodeUri: src/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Environment:
+        Variables:
+          S3_OBJECT_UPLOADED_TOPIC: !Ref ObjectUploadedTopic
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !Ref ObjectUploadedTopic
+      Events:
+        S3UploadEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            Events: s3:ObjectCreated:*
+      Tags:
+        Project: !Ref ProjectTag
+
+Outputs:
+  NotifyUsersFunctionArn:
+    Description: "Streaming Lambda Function ARN"
+    Value: !GetAtt NotifyUsersFunction.Arn
+  BucketName:
+    Description: "S3 Bucket Name"
+    Value: !Ref Bucket
+  S3ObjectUploadedTopicArn:
+    Description: "SNS Topic ARN for S3 Object Upload Notifications"
+    Value: !Ref ObjectUploadedTopic
