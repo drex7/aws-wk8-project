@@ -1,0 +1,59 @@
+name: Dev Pipeline
+
+on:
+  push:
+    branches:
+      - 'dev'
+
+env:
+  SAM_TEMPLATE: template.yaml
+  STACK_NAME: s3-sns-dev
+  PIPELINE_EXECUTION_ROLE: arn:aws:iam::605134436600:role/aws-sam-cli-managed-main-pipe-PipelineExecutionRole-EatbBaXOtrrl
+  CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::605134436600:role/aws-sam-cli-managed-main--CloudFormationExecutionRo-ZmFKIH6B04xB
+  ARTIFACTS_BUCKET: aws-sam-cli-managed-dev-pipeline-r-artifactsbucket-srhclqjttd3t
+  REGION: eu-central-1
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build SAM Application
+        run: sam build --template ${SAM_TEMPLATE} --use-container
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.REGION }}
+          role-to-assume: ${{ env.PIPELINE_EXECUTION_ROLE }}
+          role-session-name: dev-deployment
+          role-duration-seconds: 3600
+
+      - name: Package and deploy to dev stack
+        run: |
+          sam package \
+            --s3-bucket ${ARTIFACTS_BUCKET} \
+            --s3-prefix dev \
+            --region ${REGION} \
+            --output-template-file packaged-dev.yaml
+
+          sam deploy \
+            --config-env prod \
+            --template-file packaged-dev.yaml \
+            --stack-name ${STACK_NAME} \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --region ${REGION} \
+            --s3-bucket ${ARTIFACTS_BUCKET} \
+            --s3-prefix dev \
+            --parameter-overrides Environment=dev \
+            --role-arn ${CLOUDFORMATION_EXECUTION_ROLE} \
+            --no-fail-on-empty-changeset

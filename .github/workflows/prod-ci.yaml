@@ -1,0 +1,49 @@
+name: Prod Pipeline
+
+on:
+  push:
+    branches:
+      - 'main'
+
+env:
+  SAM_TEMPLATE: template.yaml
+  STACK_NAME: s3-sns-prod
+  PIPELINE_EXECUTION_ROLE: arn:aws:iam::850995534424:role/aws-sam-cli-managed-prod-pipe-PipelineExecutionRole-VheojxGVc8xF
+  CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::850995534424:role/aws-sam-cli-managed-prod--CloudFormationExecutionRo-xWsNsB6jSX5E
+  ARTIFACTS_BUCKET: aws-sam-cli-managed-dev-pipeline-r-artifactsbucket-srhclqjttd3t
+  REGION: eu-central-1
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build SAM Application
+        run: sam build --template ${SAM_TEMPLATE} --use-container
+
+      - name: Assume the prod pipeline role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.REGION }}
+          role-to-assume: ${{ env.PIPELINE_EXECUTION_ROLE }}
+          role-session-name: prod-deployment
+          role-duration-seconds: 3600
+
+      - name: Package and deploy to prod stack
+        run: |
+          sam package \
+            --config-env prod 
+
+          sam deploy \
+            --config-env prod \
+            --role-arn ${CLOUDFORMATION_EXECUTION_ROLE} \
+            --no-fail-on-empty-changeset
