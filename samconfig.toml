@@ -17,6 +17,7 @@ capabilities = "CAPABILITY_NAMED_IAM"
 [dev]
 [dev.deploy]
 [dev.deploy.parameters]
+stack_name = "s3-sns-dev"
 parameter_overrides = "EnvName=dev"
 
 
