@@ -40,8 +40,7 @@ jobs:
 
       - name: Package and deploy to dev stack
         run: |
-          sam package \
-            --config-env dev 
+          sam package 
 
           sam deploy \
             --config-env dev \
