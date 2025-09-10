@@ -45,4 +45,5 @@ jobs:
           sam deploy \
             --config-env dev \
             --role-arn ${CLOUDFORMATION_EXECUTION_ROLE} \
-            --no-fail-on-empty-changeset
+            --no-fail-on-empty-changeset \
+            --disable-rollback
