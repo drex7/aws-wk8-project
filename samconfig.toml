@@ -15,21 +15,32 @@ template_file = "packaged-dev.yaml"
 capabilities = "CAPABILITY_NAMED_IAM"
 
 [dev]
+[dev.package]
+[dev.package.parameters]
+s3_prefix = "dev"
+output_template_file = "packaged-dev.yaml"
+
 [dev.deploy]
 [dev.deploy.parameters]
 stack_name = "s3-sns-dev"
 parameter_overrides = "EnvName=dev"
-
+template_file = "packaged-dev.yaml"
+s3_bucket = "aws-sam-cli-managed-dev-pipeline-r-artifactsbucket-srhclqjttd3t"
+region = "eu-central-1"
+capabilities = "CAPABILITY_NAMED_IAM"
 
 [prod]
 [prod.package]
 [prod.package.parameters]
 s3_prefix = "prod"
-output_template-file = "packaged-prod.yaml"
+output_template_file = "packaged-prod.yaml"  # Fixed typo: was "output_template-file"
 
 [prod.deploy]
 [prod.deploy.parameters]
 stack_name = "s3-sns-prod"
 template_file = "packaged-prod.yaml"
+s3_bucket = "aws-sam-cli-managed-dev-pipeline-r-artifactsbucket-srhclqjttd3t"  # Added missing s3_bucket
+region = "eu-central-1"  # Added missing region
 s3_prefix = "prod"
 parameter_overrides = "EnvName=prod"
+capabilities = "CAPABILITY_NAMED_IAM"  # Added missing capabilities
