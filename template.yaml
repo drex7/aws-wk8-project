@@ -74,9 +74,7 @@ Resources:
       TopicName: !Sub "s3-upload-notifications-${EnvName}"
       Subscription:
         - Protocol: email
-          Endpoint: !Select [ 0, !Ref EmailAddresses ]
-        - Protocol: email
-          Endpoint: !Select [ 1, !Ref EmailAddresses ]
+          Endpoint: !Sub "{{resolve:ssm-secure:/email}}"
 
   NotifyUsersFunction:
     Type: AWS::Serverless::Function
