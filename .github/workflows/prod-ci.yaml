@@ -8,8 +8,8 @@ on:
 env:
   SAM_TEMPLATE: template.yaml
   STACK_NAME: s3-sns-prod
-  PIPELINE_EXECUTION_ROLE: arn:aws:iam::101067743333:role/aws-sam-cli-managed-prod--CloudFormationExecutionRo-VPZ2H15pFqki
-  CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::605134436600:role/aws-sam-cli-managed-dev-p-CloudFormationExecutionRo-vtgQSXlGijaJ
+  PIPELINE_EXECUTION_ROLE: arn:aws:iam::101067743333:role/aws-sam-cli-managed-prod-pipe-PipelineExecutionRole-reQpmKGGzvMw
+  CLOUDFORMATION_EXECUTION_ROLE: arn:aws:iam::101067743333:role/aws-sam-cli-managed-prod--CloudFormationExecutionRo-VPZ2H15pFqki
   ARTIFACTS_BUCKET: aws-sam-cli-managed-prod-pipeline--artifactsbucket-ygol9kl4mteq
   REGION: eu-central-1
 
